@@ -1,0 +1,14 @@
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+sqlalchemy==2.0.28
+alembic==1.13.1 # Для миграций БД (опционально, но рекомендуется)
+python-multipart==0.0.9 # Для загрузки файлов
+python-docx==0.8.11
+PyPDF2==3.0.1
+# или используйте pypdf
+pypdf==4.2.0
+elasticsearch==8.12.1
+httpx==0.27.0 # Для асинхронных HTTP запросов к LLM
+jinja2==3.1.3
+reportlab==4.2.0 # Для генерации PDF
+python-dotenv==1.0.1 # Для загрузки переменных окружения из .env файла

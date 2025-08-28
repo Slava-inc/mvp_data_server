@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ settings.PROJECT_NAME }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1, h2 { color: #333; }
+        form { margin-bottom: 20px; }
+        input[type="file"], input[type="text"], button { padding: 10px; margin: 5px 0; }
+        #results { border-top: 1px solid #ccc; padding-top: 20px; }
+        .result-item { margin-bottom: 10px; padding: 5px; border: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <h1>{{ settings.PROJECT_NAME }} - MVP</h1>
+
+    <h2>Загрузить документ</h2>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <button type="submit">Загрузить</button>
+    </form>
+    <div id="uploadStatus"></div>
+
+    <h2>Поиск</h2>
+    <form id="searchForm">
+        <input type="text" name="query" placeholder="Введите поисковый запрос..." required>
+        <button type="submit">Искать</button>
+    </form>
+    <div id="searchResults"></div>
+
+    <h2>Спросить ИИ</h2>
+    <form id="askForm">
+        <input type="text" name="question" placeholder="Задайте вопрос..." required>
+        <button type="submit">Спросить</button>
+    </form>
+    <div id="aiAnswer"></div>
+
+    <script>
+        // Обработка загрузки файла
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.innerHTML = 'Загрузка...';
+
+            try {
+                const response = await fetch('/upload/', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    statusDiv.innerHTML = `Файл загружен: ${result.filename}`;
+                } else {
+                    const errorText = await response.text();
+                    statusDiv.innerHTML = `Ошибка загрузки: ${errorText}`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `Ошибка: ${error}`;
+            }
+        });
+
+        // Обработка поиска
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const query = this.querySelector('input[name="query"]').value;
+            const resultsDiv = document.getElementById('searchResults');
+            resultsDiv.innerHTML = 'Поиск...';
+
+            try {
+                const response = await fetch(`/search/?query=${encodeURIComponent(query)}`);
+                if (response.ok) {
+                    const results = await response.json();
+                    let html = '<h3>Результаты поиска:</h3>';
+                    if (results.length > 0) {
+                        html += '<ul>';
+                        results.forEach(item => {
+                            html += `<li class="result-item"><strong>${item.filename}</strong> (ID: ${item.id}, Score: ${item.score.toFixed(2)})</li>`;
+                        });
+                        html += '</ul>';
+                    } else {
+                        html += '<p>Ничего не найдено.</p>';
+                    }
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `Ошибка поиска: ${await response.text()}`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `Ошибка: ${error}`;
+            }
+        });
+
+        // Обработка вопроса к ИИ
+        document.getElementById('askForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const question = this.querySelector('input[name="question"]').value;
+            const answerDiv = document.getElementById('aiAnswer');
+            answerDiv.innerHTML = 'Обработка запроса...';
+
+            try {
+                const formData = new FormData();
+                formData.append('question', question);
+                const response = await fetch('/ask/', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    answerDiv.innerHTML = `
+                        <h3>Ответ ИИ:</h3>
+                        <p><strong>Вопрос:</strong> ${result.question}</p>
+                        <p><strong>Ответ:</strong> ${result.answer}</p>
+                        <p><em>Источник контекста:</em> ${result.context_source || 'Не указан'}</p>
+                    `;
+                } else {
+                    answerDiv.innerHTML = `Ошибка ИИ: ${await response.text()}`;
+                }
+            } catch (error) {
+                answerDiv.innerHTML = `Ошибка: ${error}`;
+            }
+        });
+
+    </script>
+</body>
+</html>
