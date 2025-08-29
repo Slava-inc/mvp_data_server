@@ -16,6 +16,31 @@ templates = Jinja2Templates(directory="app/templates")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "settings": settings})
 
+@router.get("/documents/{document_id}/chunks/", response_model=List[dict]) # Используем dict для простоты
+async def read_document_chunks(document_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Получает фрагменты конкретного документа."""
+    # Проверяем, существует ли документ
+    db_document = document_service.get_document(db, document_id=document_id)
+    if db_document is None:
+        raise HTTPException(status_code=404, detail="Документ не найден")
+    
+    # Получаем фрагменты
+    db_chunks = document_service.get_document_chunks(db, document_id=document_id, skip=skip, limit=limit)
+    
+    # Преобразуем в словари для ответа
+    chunks_response = [
+        {
+            "id": chunk.id,
+            "document_id": chunk.document_id,
+            "content": chunk.content,
+            "chunk_index": chunk.chunk_index,
+            "start_position": chunk.start_position,
+            "end_position": chunk.end_position
+        }
+        for chunk in db_chunks
+    ]
+    return chunks_response
+
 @router.post("/upload/", response_model=DocumentResponse)
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not file:
@@ -70,6 +95,8 @@ async def ask_question(question: str = Form(...), db: Session = Depends(get_db))
     # Запрос к LLM
     answer = await ai_service.ask_llm(question, context)
     return {"question": question, "answer": answer, "context_source": search_results[0]['filename'] if search_results else "Нет контекста"}
+
+
 
 # Добавить эндпоинт для генерации отчета (PDF)
 # ...

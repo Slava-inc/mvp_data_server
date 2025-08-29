@@ -71,3 +71,5 @@ def normalize_text(text: str) -> str:
     text = re.sub(r'\n\s*\n', '\n\n', text)
     text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text) # Заменить одиночные \n на пробел
     return text.strip()
+
+
